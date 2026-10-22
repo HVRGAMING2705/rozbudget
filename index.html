@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RozBudget — Your daily income budget, tracked</title>
+<meta name="description" content="RozBudget turns your monthly income into a simple daily budget and tracks every rupee against it — UPI, card, cash and bank, all in one dashboard.">
+<style>
+  :root{
+    --ink:#0d2137; --ink2:#12314f; --bg:#f2f5f8; --card:#ffffff;
+    --line:#e3eaf1; --muted:#64748b; --muted2:#94a3b8;
+    --green:#16a34a; --green-dark:#15803d; --amber:#d97706; --red:#dc2626;
+    --accent:#22c55e; --radius:16px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    background:var(--bg); color:#16283c; line-height:1.45; padding-bottom:40px;
+  }
+  header{
+    background:var(--ink); color:#fff; padding:18px 16px 20px;
+  }
+  .header-in{max-width:600px; margin:0 auto; display:flex; align-items:center; gap:12px;}
+  .logo{
+    width:42px; height:42px; border-radius:12px; background:var(--green);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:800; font-size:22px; color:#fff; flex:0 0 auto;
+  }
+  .logo span{transform:translateY(-1px);}
+  header h1{font-size:22px; font-weight:800; letter-spacing:.2px;}
+  header p{font-size:12.5px; color:#b9cbdd; margin-top:1px;}
+  main{max-width:600px; margin:0 auto; padding:14px 12px 0;}
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:16px; margin-bottom:14px; box-shadow:0 1px 2px rgba(13,33,55,.04);
+  }
+  .card h2{font-size:15px; font-weight:700; color:var(--ink); margin-bottom:10px;}
+  .card h2 .sub{font-weight:500; color:var(--muted); font-size:12px;}
+  /* Today hero */
+  .hero{background:var(--ink); color:#fff; border:none;}
+  .hero .greet{font-size:14px; color:#b9cbdd;}
+  .hero .budget-line{font-size:16px; margin-top:2px;}
+  .hero .budget-big{font-size:40px; font-weight:800; letter-spacing:.2px; margin:2px 0 0;}
+  .hero .budget-big small{font-size:14px; font-weight:600; color:#b9cbdd;}
+  .hero-grid{display:flex; gap:10px; margin-top:14px;}
+  .hero-stat{flex:1; background:var(--ink2); border-radius:12px; padding:10px 12px;}
+  .hero-stat .lbl{font-size:11px; color:#9fb8d0; text-transform:uppercase; letter-spacing:.6px;}
+  .hero-stat .val{font-size:18px; font-weight:700; margin-top:2px;}
+  .bar-track{height:10px; background:#1d3d5c; border-radius:99px; margin-top:14px; overflow:hidden;}
+  .bar-fill{height:100%; border-radius:99px; background:var(--green); width:0%; transition:width .3s ease;}
+  .bar-fill.amber{background:var(--amber);} .bar-fill.red{background:var(--red);}
+  .hero .status{font-size:13px; margin-top:8px; color:#d7e5f2;}
+  .hero .setup-note{font-size:14px; color:#d7e5f2; margin-top:6px;}
+  /* Last night */
+  .night{display:flex; align-items:center; gap:12px;}
+  .night .big{font-size:20px; font-weight:800;}
+  .pill{font-size:12px; font-weight:700; padding:4px 10px; border-radius:99px; white-space:nowrap;}
+  .pill.under{background:#e8f7ee; color:var(--green-dark);}
+  .pill.over{background:#fdecec; color:var(--red);}
+  .night p{font-size:13px; color:var(--muted);}
+  /* Forms */
+  label{display:block; font-size:12px; font-weight:600; color:var(--muted); margin:10px 0 5px; text-transform:uppercase; letter-spacing:.5px;}
+  label:first-of-type{margin-top:0;}
+  input, select, textarea{
+    width:100%; height:46px; padding:0 12px; border:1px solid #d4dee7; border-radius:10px;
+    font-size:16px; font-family:inherit; background:#fff; color:#16283c;
+  }
+  textarea{height:auto; min-height:96px; padding:10px 12px; resize:vertical; font-size:14px;}
+  input:focus, select:focus, textarea:focus{outline:2px solid #9fd3ae; border-color:var(--green);}
+  .row2{display:flex; gap:10px;} .row2 > div{flex:1;}
+  .seg{display:flex; border:1px solid #d4dee7; border-radius:10px; overflow:hidden;}
+  .seg button{
+    flex:1; height:46px; border:none; background:#fff; font-size:15px; font-weight:600;
+    color:var(--muted); cursor:pointer; font-family:inherit;
+  }
+  .seg button.on-out{background:#fdecec; color:var(--red);}
+  .seg button.on-in{background:#e8f7ee; color:var(--green-dark);}
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    height:48px; padding:0 18px; border-radius:12px; border:none; cursor:pointer;
+    font-size:15px; font-weight:700; font-family:inherit; width:100%;
+  }
+  .btn-primary{background:var(--green); color:#fff;}
+  .btn-primary:active{background:var(--green-dark);}
+  .btn-ghost{background:#fff; border:1px solid #d4dee7; color:var(--ink); font-weight:600;}
+  .btn-danger{background:#fff; border:1px solid #f0c6c6; color:var(--red); font-weight:600;}
+  .btn-small{height:40px; font-size:13.5px; border-radius:10px;}
+  .btn-row{display:flex; gap:10px;} .btn-row .btn{flex:1;}
+  .hint{font-size:12.5px; color:var(--muted); margin-top:8px;}
+  .ok-msg{font-size:13px; color:var(--green-dark); font-weight:600; margin-top:8px; min-height:18px;}
+  /* Dashboard */
+  .tiles{display:flex; gap:10px;}
+  .tile{flex:1; background:#f6f9fb; border:1px solid var(--line); border-radius:12px; padding:10px 12px;}
+  .tile .lbl{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.6px;}
+  .tile .val{font-size:17px; font-weight:800; margin-top:2px;}
+  .tile .val.in{color:var(--green-dark);} .tile .val.out{color:var(--red);}
+  .cat-row{margin-top:10px;}
+  .cat-head{display:flex; justify-content:space-between; font-size:13px; margin-bottom:4px;}
+  .cat-head .amt{font-weight:700;}
+  .cat-track{height:8px; background:#edf1f5; border-radius:99px; overflow:hidden;}
+  .cat-fill{height:100%; border-radius:99px;}
+  .chart-wrap{margin-top:14px;}
+  .empty{font-size:13.5px; color:var(--muted); padding:8px 0;}
+  /* Day list + txn list */
+  .day-row{display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--line); font-size:13.5px;}
+  .day-row:last-child{border-bottom:none;}
+  .day-row .d{font-weight:600; color:var(--ink);}
+  .day-row .nums{color:var(--muted); font-size:12.5px;}
+  .day-row .verdict{font-weight:700; font-size:12.5px; min-width:86px; text-align:right;}
+  .verdict.under{color:var(--green-dark);} .verdict.over{color:var(--red);}
+  .txn-day{font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; margin:14px 0 2px;}
+  .txn-day:first-child{margin-top:2px;}
+  .txn{display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--line);}
+  .txn:last-child{border-bottom:none;}
+  .dot{width:10px; height:10px; border-radius:50%; flex:0 0 auto;}
+  .txn .mid{flex:1; min-width:0;}
+  .txn .note{font-size:14.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .txn .meta{font-size:12px; color:var(--muted);}
+  .txn .amt{font-size:14.5px; font-weight:800; white-space:nowrap;}
+  .txn .amt.in{color:var(--green-dark);} .txn .amt.out{color:#16283c;}
+  .del{
+    border:none; background:#f6f9fb; color:var(--muted); width:28px; height:28px; border-radius:8px;
+    cursor:pointer; font-size:14px; flex:0 0 auto; line-height:1;
+  }
+  .del:active{background:#fdecec; color:var(--red);}
+  details.card summary{cursor:pointer; font-size:15px; font-weight:700; color:var(--ink); list-style:none;}
+  details.card summary::-webkit-details-marker{display:none;}
+  details.card summary .sub{font-weight:500; color:var(--muted); font-size:12px; display:block; margin-top:2px;}
+  details.card .body{margin-top:12px;}
+  footer{max-width:600px; margin:6px auto 0; padding:0 16px; font-size:12px; color:var(--muted2); text-align:center;}
+  #toast{
+    position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(20px);
+    background:var(--ink); color:#fff; font-size:14px; font-weight:600; padding:11px 18px;
+    border-radius:99px; opacity:0; pointer-events:none; transition:all .25s ease; z-index:50;
+    max-width:88vw; text-align:center; box-shadow:0 6px 20px rgba(13,33,55,.25);
+  }
+  #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  .file-in{padding:10px 12px; height:auto; font-size:14px;}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-in">
+    <div class="logo"><span>₹</span></div>
+    <div>
+      <h1>RozBudget</h1>
+      <p>Your daily income budget, tracked.</p>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- TODAY -->
+  <section class="card hero" id="todayCard">
+    <div class="greet" id="greetLine">Hello</div>
+    <div id="todayBody"></div>
+  </section>
+
+  <!-- LAST NIGHT -->
+  <section class="card" id="nightCard">
+    <h2>Last night&rsquo;s summary <span class="sub">— yesterday, budget vs spent</span></h2>
+    <div id="nightBody"></div>
+  </section>
+
+  <!-- ADD TRANSACTION -->
+  <section class="card">
+    <h2>Add a transaction</h2>
+    <form id="addForm" autocomplete="off">
+      <div class="row2">
+        <div>
+          <label for="fAmount">Amount (₹)</label>
+          <input id="fAmount" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 450" required>
+        </div>
+        <div>
+          <label>Type</label>
+          <div class="seg" id="dirSeg">
+            <button type="button" id="segOut" class="on-out">Money out</button>
+            <button type="button" id="segIn">Money in</button>
+          </div>
+        </div>
+      </div>
+      <label for="fNote">Note / merchant</label>
+      <input id="fNote" type="text" placeholder="e.g. Swiggy order, Uber to campus, salary" maxlength="80">
+      <div class="row2">
+        <div>
+          <label for="fCat">Category</label>
+          <select id="fCat"></select>
+        </div>
+        <div>
+          <label for="fMethod">Method</label>
+          <select id="fMethod">
+            <option>UPI</option>
+            <option>Card</option>
+            <option>Cash</option>
+            <option>Bank</option>
+          </select>
+        </div>
+      </div>
+      <label for="fWhen">Date &amp; time</label>
+      <input id="fWhen" type="datetime-local">
+      <div style="height:14px"></div>
+      <button class="btn btn-primary" type="submit">Add transaction</button>
+    </form>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section class="card">
+    <h2>This month <span class="sub" id="monthName"></span></h2>
+    <div class="tiles">
+      <div class="tile"><div class="lbl">Money in</div><div class="val in" id="mIn">₹0</div></div>
+      <div class="tile"><div class="lbl">Money out</div><div class="val out" id="mOut">₹0</div></div>
+      <div class="tile"><div class="lbl">Net</div><div class="val" id="mNet">₹0</div></div>
+    </div>
+    <div class="chart-wrap">
+      <h2 style="margin-bottom:2px;">Where the money goes</h2>
+      <div id="catBreakdown"></div>
+    </div>
+    <div class="chart-wrap">
+      <h2 style="margin-bottom:2px;">Last 7 days <span class="sub">— dashed line is your daily budget</span></h2>
+      <div id="weekChart"></div>
+    </div>
+  </section>
+
+  <!-- PER DAY -->
+  <section class="card">
+    <h2>Day by day <span class="sub">— daily budget vs spent, this month</span></h2>
+    <div id="dayList"></div>
+  </section>
+
+  <!-- TRANSACTIONS -->
+  <section class="card">
+    <h2>Transactions <span class="sub" id="txnCount"></span></h2>
+    <div id="txnList"></div>
+  </section>
+
+  <!-- IMPORT -->
+  <details class="card">
+    <summary>Import &amp; automatic tracking<span class="sub">Paste bank / UPI alerts, upload a statement CSV, or load demo data</span></summary>
+    <div class="body">
+      <label for="alertBox">Paste an alert (SMS or email text)</label>
+      <textarea id="alertBox" placeholder="Paste one or more bank / UPI alert messages here. Separate multiple alerts with a blank line. Works with ICICI, Kotak, SBI, HDFC, Slice and generic UPI alerts."></textarea>
+      <div style="height:10px"></div>
+      <button class="btn btn-primary btn-small" id="parseBtn" type="button">Read alerts &amp; add transactions</button>
+      <div class="ok-msg" id="parseMsg"></div>
+
+      <label style="margin-top:18px;">Bank statement (CSV)</label>
+      <input class="file-in" id="csvFile" type="file" accept=".csv,text/csv">
+      <p class="hint">Exports from ICICI, Kotak, SBI, PhonePe and GPay work — columns are matched automatically (date, narration, debit, credit, amount). Header and total rows are skipped.</p>
+      <div class="ok-msg" id="csvMsg"></div>
+
+      <label style="margin-top:18px;">Just looking?</label>
+      <button class="btn btn-ghost btn-small" id="demoBtn" type="button">Load demo data</button>
+      <p class="hint">Fills the app with sample transactions from the last 10 days so you can see the dashboard working. Clear it anytime from Settings.</p>
+    </div>
+  </details>
+
+  <!-- SETTINGS -->
+  <details class="card">
+    <summary>Settings &amp; backup<span class="sub">Monthly income, data backup, clear data</span></summary>
+    <div class="body">
+      <label for="incomeIn">Monthly income (₹)</label>
+      <div class="row2">
+        <div><input id="incomeIn" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 30000"></div>
+        <div><button class="btn btn-primary" id="incomeSave" type="button" style="height:46px;">Save income</button></div>
+      </div>
+      <p class="hint" id="incomeHint">Your daily budget is your monthly income divided by the days in the month.</p>
+
+      <label style="margin-top:18px;">Backup</label>
+      <div class="btn-row">
+        <button class="btn btn-ghost btn-small" id="exportBtn" type="button">Export JSON</button>
+        <button class="btn btn-ghost btn-small" id="importBtn" type="button">Import JSON</button>
+      </div>
+      <input id="jsonFile" type="file" accept=".json,application/json" style="display:none;">
+      <div class="ok-msg" id="backupMsg"></div>
+
+      <label style="margin-top:18px;">Danger zone</label>
+      <button class="btn btn-danger btn-small" id="clearBtn" type="button">Clear all data</button>
+      <p class="hint">Removes income and every transaction stored in this browser.</p>
+    </div>
+  </details>
+</main>
+
+<footer>RozBudget keeps everything in your own browser (localStorage). Nothing is uploaded anywhere.</footer>
+<div id="toast"></div>
+
+<script>
+'use strict';
+/* ================= RozBudget — pure logic (no DOM above this line is touched) ================= */
+var RB_KEY = 'rozbudget_v1';
+
+/* Category rules: checked in order, first keyword hit wins. Short words use word-boundary match. */
+var RB_CATS = [
+  { name:'Food',         color:'#e8590c', kw:['swiggy','zomato','blinkit','zepto','cafe','restaurant','dominos','domino','mcdonald','kfc','chai','tiffin','bakery','biryani','pizza','burger','hotel','eatsure','freshmenu'] },
+  { name:'Shopping',     color:'#7c3aed', kw:['amazon','flipkart','myntra','meesho','ajio','decathlon','nykaa','ikea','croma','vijay sales'] },
+  { name:'Transport',    color:'#2563eb', kw:['uber','ola','rapido','petrol','diesel','fastag','metro','irctc','fuel','redbus'] },
+  { name:'Subscriptions',color:'#db2777', kw:['netflix','spotify','apple','icloud','patreon','prime','hotstar','youtube premium','google one','jiosaavn','zee5'] },
+  { name:'Bills',        color:'#0891b2', kw:['airtel','jio','electricity','bescom','broadband','recharge','water bill','gas bill','rent','postpaid','dish tv','tatasky','tata sky'] },
+  { name:'Health',       color:'#16a34a', kw:['pharmacy','apollo','hospital','clinic','dental','medical','pharmeasy','1mg','netmeds','doctor'] },
+  { name:'Education',    color:'#4f46e5', kw:['udemy','coursera','books','exam fee','tuition','course','unacademy','byjus'] },
+  { name:'Income',       color:'#15803d', kw:['salary','stipend','freelance','pocket money','scholarship','refund'] },
+  { name:'Transfers',    color:'#64748b', kw:[] },
+  { name:'Other',        color:'#9ca3af', kw:[] }
+];
+var RB_CAT_NAMES = RB_CATS.map(function(c){ return c.name; });
+function rbCatColor(name){
+  for (var i=0;i<RB_CATS.length;i++) if (RB_CATS[i].name===name) return RB_CATS[i].color;
+  return '#9ca3af';
+}
+function rbKwHit(text, kw){
+  var esc = kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp('\\b' + esc + '\\b', 'i').test(text);
+}
+function rbCategorize(note, method, dir){
+  var n = (note || '').toLowerCase();
+  var order = ['Food','Shopping','Transport','Subscriptions','Bills','Health','Education','Income'];
+  for (var i=0;i<order.length;i++){
+    var cat = null;
+    for (var j=0;j<RB_CATS.length;j++) if (RB_CATS[j].name===order[i]) cat = RB_CATS[j];
+    for (var k=0;k<cat.kw.length;k++) if (rbKwHit(n, cat.kw[k])) return cat.name;
+  }
+  if (dir === 'in') return 'Income';
+  if (/upi/i.test(n) || method === 'UPI') return 'Transfers';
+  return 'Other';
+}
+
+/* ---------- Money / date helpers ---------- */
+function rbFmt(n){
+  var v = Math.round(Math.abs(n));
+  return '₹' + v.toLocaleString('en-IN');
+}
+function rbDayKey(ts){
+  var d = new Date(ts);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function rbDaysInMonth(y, m){ return new Date(y, m+1, 0).getDate(); }
+
+/* ---------- Alert parser (ICICI / Kotak / SBI / HDFC / Slice / generic UPI) ---------- */
+var RB_MONTHS = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+function rbParseDate(text){
+  var m, y, mo, d;
+  m = text.match(/(\d{1,2})-([A-Za-z]{3,9})-(\d{2,4})/);            /* 21-Oct-2026 / 21-Oct-26 */
+  if (!m) m = text.match(/(\d{1,2})\s+([A-Za-z]{3,9})\.?\s+(\d{4})/); /* 21 Oct 2026 */
+  if (m){
+    mo = RB_MONTHS[m[2].slice(0,3).toLowerCase()];
+    if (mo !== undefined){
+      y = parseInt(m[3],10); if (y < 100) y += 2000;
+      d = parseInt(m[1],10);
+      if (d>=1 && d<=31) return new Date(y, mo, d).getTime();
+    }
+  }
+  m = text.match(/(\d{1,2})[\/](\d{1,2})[\/](\d{2,4})/);            /* 21/10/2026 or 21/10/26 */
+  if (m){
+    d = parseInt(m[1],10); mo = parseInt(m[2],10)-1; y = parseInt(m[3],10);
+    if (y < 100) y += 2000;
+    if (mo>=0 && mo<=11 && d>=1 && d<=31) return new Date(y, mo, d).getTime();
+  }
+  return null;
+}
+function rbCleanNote(s){
+  return (s || '').replace(/\s+/g,' ').replace(/^[\s:\-]+|[\s.\-]+$/g,'').slice(0,60);
+}
+function rbParseAlertBlock(block){
+  var t = (block || '').trim();
+  if (!t) return null;
+  var m = t.match(/(?:₹|\bRs\.?|\bINR)\s*([\d,]+(?:\.\d{1,2})?)/i);
+  if (!m) m = t.match(/([\d,]+(?:\.\d{1,2})?)\s*(?:\/-|\bDr\b|\bCr\b)/i);
+  if (!m) return null;
+  var amount = parseFloat(m[1].replace(/,/g,''));
+  if (!amount || isNaN(amount)) return null;
+
+  /* Direction */
+  var dir = 'out';
+  var hasDebit  = /(debit|debited|spent|withdrawn|paid|purchase|used at)/i.test(t);
+  var hasCredit = /(credit|credited|received|deposited|refund)/i.test(t);
+  if (/\bCr\b/.test(t) && !/\bDr\b/.test(t)) dir = 'in';
+  else if (hasCredit && !hasDebit) dir = 'in';
+  else if (hasDebit && !hasCredit) dir = 'out';
+  else if (hasCredit && hasDebit) dir = /credit/i.test(t.split(/debit/i)[0]) ? 'in' : 'out';
+
+  /* Merchant / narration */
+  var note = '';
+  var info = t.match(/Info\s*[:\-]?\s*([^\n\r]+)/i);
+  if (info){
+    var raw = info[1].trim();
+    var parts = raw.split('/').map(function(s){ return s.trim(); }).filter(Boolean);
+    if (parts.length >= 2 && /^(UPI|IMPS|NEFT|RTGS)$/i.test(parts[0])) note = parts[1];
+    else note = raw.split(/\.|\bRef\b/i)[0];
+  }
+  if (!note){
+    var upi = t.match(/UPI[\/\-]([A-Za-z][A-Za-z ]{1,40}?)[\/\-]/);
+    if (upi) note = upi[1];
+  }
+  if (!note){
+    var at = t.match(/\bat\s+([A-Za-z0-9&.'\- ]{2,40}?)(?=\s+on\s|\s+Ref|\.|,|$)/i);
+    var to = t.match(/\bto\s+([A-Za-z0-9&.'\- ]{2,40}?)(?=\s+on\s|\s+Ref|\.|,|$)/i);
+    var frm = t.match(/\bfrom\s+([A-Za-z0-9&.'\- ]{2,40}?)(?=\s+on\s|\s+Ref|\.|,|$)/i);
+    note = (at && at[1]) || (to && to[1]) || (frm && frm[1]) || '';
+  }
+  note = rbCleanNote(note);
+  if (!note) note = (dir === 'in') ? 'Money received' : 'Payment';
+
+  /* Method */
+  var method = 'Bank';
+  if (/upi/i.test(t)) method = 'UPI';
+  else if (/card|slice/i.test(t)) method = 'Card';
+  else if (/cash/i.test(t)) method = 'Cash';
+
+  /* Date (keep current time-of-day on the parsed date) */
+  var ts = Date.now();
+  var pd = rbParseDate(t);
+  if (pd !== null){
+    var now = new Date();
+    var dd = new Date(pd);
+    dd.setHours(now.getHours(), now.getMinutes(), 0, 0);
+    ts = dd.getTime();
+  }
+  return { amount:amount, dir:dir, note:note, method:method, ts:ts, category: rbCategorize(note, method, dir) };
+}
+function rbParseAlerts(text){
+  var blocks = (text || '').split(/\n\s*\n+/);
+  var out = [];
+  for (var i=0;i<blocks.length;i++){
+    var r = rbParseAlertBlock(blocks[i]);
+    if (r) out.push(r);
+  }
+  return out;
+}
+
+/* ---------- CSV import ---------- */
+function rbSplitCSVLine(line){
+  var cells = [], cur = '', q = false;
+  for (var i=0;i<line.length;i++){
+    var ch = line[i];
+    if (q){
+      if (ch === '"'){ if (line[i+1] === '"'){ cur += '"'; i++; } else q = false; }
+      else cur += ch;
+    } else {
+      if (ch === '"') q = true;
+      else if (ch === ','){ cells.push(cur); cur = ''; }
+      else cur += ch;
+    }
+  }
+  cells.push(cur);
+  return cells.map(function(s){ return s.trim(); });
+}
+function rbCsvAmount(s){
+  if (s === undefined || s === null) return 0;
+  var v = String(s).replace(/[₹,]/g,'').replace(/\b(Dr|Cr)\b\.?/gi,'').trim();
+  var n = parseFloat(v);
+  return isNaN(n) ? 0 : Math.abs(n);
+}
+function rbParseCSV(text){
+  var lines = (text || '').split(/\r?\n/).filter(function(l){ return l.trim().length > 0; });
+  if (lines.length < 2) return [];
+  var hdrIdx = -1, cols = null;
+  for (var i=0;i<Math.min(lines.length, 12);i++){
+    var cells = rbSplitCSVLine(lines[i]).map(function(s){ return s.toLowerCase(); });
+    var c = { date:-1, desc:-1, debit:-1, credit:-1, amount:-1 };
+    cells.forEach(function(h, idx){
+      if (/date/.test(h)) c.date = idx;
+      else if (/narration|description|particulars|remarks|transaction details/.test(h)) c.desc = idx;
+      else if (/debit|withdrawal/.test(h)) c.debit = idx;
+      else if (/credit|deposit/.test(h)) c.credit = idx;
+      else if (/amount/.test(h)) c.amount = idx;
+    });
+    if (c.date >= 0 && (c.debit >= 0 || c.credit >= 0 || c.amount >= 0) && c.desc >= 0){ hdrIdx = i; cols = c; break; }
+  }
+  if (hdrIdx < 0) return [];
+  var out = [];
+  for (var r = hdrIdx+1; r < lines.length; r++){
+    var row = rbSplitCSVLine(lines[r]);
+    var desc = cols.desc >= 0 ? (row[cols.desc] || '') : '';
+    if (/opening balance|closing balance|total|brought forward|statement/i.test(desc)) continue;
+    var amt = 0, dir = 'out';
+    var dr = cols.debit >= 0 ? rbCsvAmount(row[cols.debit]) : 0;
+    var cr = cols.credit >= 0 ? rbCsvAmount(row[cols.credit]) : 0;
+    if (dr > 0){ amt = dr; dir = 'out'; }
+    else if (cr > 0){ amt = cr; dir = 'in'; }
+    else if (cols.amount >= 0){
+      var rawAmt = row[cols.amount] || '';
+      amt = rbCsvAmount(rawAmt);
+      dir = /\bCr\b/i.test(rawAmt) ? 'in' : 'out';
+      if (!amt) continue;
+    } else continue;
+    var dstr = cols.date >= 0 ? (row[cols.date] || '') : '';
+    var ts = rbParseDate(dstr);
+    if (ts === null) ts = Date.now();
+    var note = rbCleanNote(desc) || (dir === 'in' ? 'Money received' : 'Payment');
+    var method = /upi/i.test(desc) ? 'UPI' : 'Bank';
+    out.push({ amount:amt, dir:dir, note:note, method:method, ts:ts, category: rbCategorize(note, method, dir) });
+  }
+  return out;
+}
+
+/* ================= App (browser only) ================= */
+if (typeof document !== 'undefined'){
+
+var state = { income: 0, txns: [] };
+function save(){
+  try { localStorage.setItem(RB_KEY, JSON.stringify(state)); } catch(e){}
+}
+function load(){
+  try {
+    var raw = localStorage.getItem(RB_KEY);
+    if (raw){ var p = JSON.parse(raw); if (p && Array.isArray(p.txns)) state = p; }
+  } catch(e){}
+}
+function uid(){ return 't' + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+function dailyBudgetFor(dateObj){
+  if (!state.income) return 0;
+  return Math.round(state.income / rbDaysInMonth(dateObj.getFullYear(), dateObj.getMonth()));
+}
+function spentOn(dayKey){
+  var s = 0;
+  state.txns.forEach(function(t){ if (t.dir==='out' && rbDayKey(t.ts)===dayKey) s += t.amount; });
+  return s;
+}
+function toast(msg){
+  var el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(el._h); el._h = setTimeout(function(){ el.classList.remove('show'); }, 2600);
+}
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
+/* ---------- Demo data ---------- */
+function demoTxns(){
+  var D = 86400000, now = new Date();
+  function at(daysAgo, h, mi){ var d = new Date(now.getTime() - daysAgo*D); d.setHours(h, mi, 0, 0); return d.getTime(); }
+  var rows = [
+    [0, 8,15, 60,   'Chai stall near campus', 'Cash', 'out'],
+    [0,13,40, 450,  'Swiggy order', 'UPI', 'out'],
+    [1,10, 5, 600,  'Blinkit groceries', 'UPI', 'out'],
+    [1,18,20, 180,  'Uber to Hitech City', 'UPI', 'out'],
+    [1,16, 0, 250,  'Coffee at cafe', 'Card', 'out'],
+    [2, 9,30, 400,  'Zepto order', 'UPI', 'out'],
+    [2,11, 0, 119,  'Spotify Premium', 'Card', 'out'],
+    [2,19,45, 95,   'Rapido ride', 'UPI', 'out'],
+    [3,14,10, 1299, 'Amazon order', 'Card', 'out'],
+    [3, 8, 0, 60,   'Metro card recharge', 'UPI', 'out'],
+    [3,20,15, 350,  'Apollo Pharmacy', 'UPI', 'out'],
+    [4,13,30, 620,  'Zomato order', 'UPI', 'out'],
+    [4, 9, 0, 239,  'Airtel recharge', 'UPI', 'out'],
+    [4,12,30, 300,  'Tiffin centre lunch', 'Cash', 'out'],
+    [5,11,20, 500,  'Petrol bunk', 'Card', 'out'],
+    [5,15,40, 499,  'Udemy course', 'Card', 'out'],
+    [5,18, 5, 500,  'UPI to Rahul Sharma', 'UPI', 'out'],
+    [6,10,45, 899,  'Flipkart order', 'Card', 'out'],
+    [6, 9,10, 299,  'Jio recharge', 'UPI', 'out'],
+    [6,20,30, 320,  'McDonald\'s dinner', 'UPI', 'out'],
+    [7,12, 0, 850,  'Electricity bill BESCOM', 'Bank', 'out'],
+    [7,21, 0, 199,  'Netflix subscription', 'Card', 'out'],
+    [7, 8,20, 60,   'Chai stall near campus', 'Cash', 'out'],
+    [8,13,15, 1099, 'Myntra order', 'UPI', 'out'],
+    [8,19,30, 399,  'Dominos pizza', 'UPI', 'out'],
+    [8,10, 0, 2000, 'Freelance payment received', 'Bank', 'in'],
+    [9, 9, 0, 75,   'iCloud storage', 'Card', 'out'],
+    [9,17,50, 210,  'Uber ride home', 'UPI', 'out'],
+    [9,11, 0, 5000, 'Pocket money from home', 'Bank', 'in']
+  ];
+  return rows.map(function(r){
+    var note = r[4], method = r[5], dir = r[6];
+    return { id: uid()+Math.random().toString(36).slice(2,5), ts: at(r[0], r[1], r[2]), amount: r[3], note: note, method: method, dir: dir, category: rbCategorize(note, method, dir) };
+  });
+}
+
+/* ---------- Rendering ---------- */
+function renderToday(){
+  var now = new Date(), h = now.getHours();
+  var greet = h < 12 ? 'Good morning' : (h < 17 ? 'Good afternoon' : 'Good evening');
+  document.getElementById('greetLine').textContent =
+    greet + ' — ' + now.toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long' });
+  var body = document.getElementById('todayBody');
+  var budget = dailyBudgetFor(now);
+  if (!budget){
+    body.innerHTML = '<div class="budget-line">Your daily income budget</div>' +
+      '<p class="setup-note">Set your monthly income in <b>Settings &amp; backup</b> below (or tap “Load demo data” in Import) and RozBudget will turn it into a daily budget and track every rupee against it.</p>';
+    return;
+  }
+  var spent = spentOn(rbDayKey(now.getTime()));
+  var left = budget - spent;
+  var pct = Math.min(100, Math.round(spent / budget * 100));
+  var cls = spent > budget ? 'red' : (pct >= 70 ? 'amber' : '');
+  var status = spent > budget
+    ? 'Over budget by ' + rbFmt(spent - budget) + ' today. Easy does it for the rest of the day.'
+    : (left <= budget * 0.15 ? 'Almost there — ' + rbFmt(left) + ' left for today.' : 'On track. ' + rbFmt(left) + ' left for today.');
+  body.innerHTML =
+    '<div class="budget-line">Your daily income budget is</div>' +
+    '<div class="budget-big">' + rbFmt(budget) + ' <small>/ day</small></div>' +
+    '<div class="hero-grid">' +
+      '<div class="hero-stat"><div class="lbl">Spent today</div><div class="val">' + rbFmt(spent) + '</div></div>' +
+      '<div class="hero-stat"><div class="lbl">' + (left < 0 ? 'Over by' : 'Remaining') + '</div><div class="val">' + rbFmt(left) + '</div></div>' +
+    '</div>' +
+    '<div class="bar-track"><div class="bar-fill ' + cls + '" style="width:' + pct + '%"></div></div>' +
+    '<div class="status">' + esc(status) + '</div>';
+}
+function renderNight(){
+  var y = new Date(Date.now() - 86400000);
+  var budget = dailyBudgetFor(y);
+  var body = document.getElementById('nightBody');
+  if (!budget){ body.innerHTML = '<p class="empty">Set your monthly income to see the nightly budget vs spent summary.</p>'; return; }
+  var spent = spentOn(rbDayKey(y.getTime()));
+  var diff = budget - spent;
+  var pill = diff >= 0
+    ? '<span class="pill under">Under by ' + rbFmt(diff) + '</span>'
+    : '<span class="pill over">Over by ' + rbFmt(-diff) + '</span>';
+  body.innerHTML = '<div class="night"><div><div class="big">' + rbFmt(spent) + ' <span style="font-size:13px;color:var(--muted);font-weight:600;">spent of ' + rbFmt(budget) + ' budget</span></div>' +
+    '<p>' + y.toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long' }) + '</p></div><div style="flex:1"></div>' + pill + '</div>';
+}
+function renderDash(){
+  var now = new Date(), y = now.getFullYear(), mo = now.getMonth();
+  document.getElementById('monthName').textContent = '— ' + now.toLocaleDateString('en-IN', { month:'long', year:'numeric' });
+  var tin = 0, tout = 0, catTotals = {};
+  state.txns.forEach(function(t){
+    var d = new Date(t.ts);
+    if (d.getFullYear() !== y || d.getMonth() !== mo) return;
+    if (t.dir === 'in') tin += t.amount;
+    else { tout += t.amount; catTotals[t.category] = (catTotals[t.category] || 0) + t.amount; }
+  });
+  document.getElementById('mIn').textContent = rbFmt(tin);
+  document.getElementById('mOut').textContent = rbFmt(tout);
+  var net = tin - tout;
+  var netEl = document.getElementById('mNet');
+  netEl.textContent = (net < 0 ? '−' : '') + rbFmt(net);
+  netEl.style.color = net < 0 ? 'var(--red)' : 'var(--green-dark)';
+
+  var cats = Object.keys(catTotals).sort(function(a,b){ return catTotals[b]-catTotals[a]; });
+  var cb = document.getElementById('catBreakdown');
+  if (!cats.length){ cb.innerHTML = '<p class="empty">No spending yet this month. Add a transaction or import your alerts.</p>'; }
+  else {
+    cb.innerHTML = cats.map(function(c){
+      var pct = tout ? Math.round(catTotals[c] / tout * 100) : 0;
+      return '<div class="cat-row"><div class="cat-head"><span><span class="dot" style="display:inline-block;background:' + rbCatColor(c) + ';margin-right:7px;"></span>' + esc(c) + '</span>' +
+        '<span class="amt">' + rbFmt(catTotals[c]) + ' <span style="color:var(--muted);font-weight:500;">(' + pct + '%)</span></span></div>' +
+        '<div class="cat-track"><div class="cat-fill" style="width:' + pct + '%;background:' + rbCatColor(c) + ';"></div></div></div>';
+    }).join('');
+  }
+
+  /* Last 7 days SVG bars */
+  var days = [], max = 1;
+  for (var i = 6; i >= 0; i--){
+    var dd = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+    var s = spentOn(rbDayKey(dd.getTime()));
+    days.push({ d: dd, spent: s });
+    if (s > max) max = s;
+  }
+  var budget = dailyBudgetFor(now);
+  if (budget > max) max = budget;
+  var W = 340, H = 130, base = 104, bw = 34, gap = (W - 7*bw) / 8;
+  var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="Spend per day, last 7 days">';
+  if (budget){
+    var by = base - Math.round(budget / max * 84);
+    svg += '<line x1="0" y1="' + by + '" x2="' + W + '" y2="' + by + '" stroke="#d97706" stroke-width="1.4" stroke-dasharray="5 4"/>' +
+           '<text x="' + (W-2) + '" y="' + (by - 4) + '" font-size="9" fill="#d97706" text-anchor="end" font-weight="700">budget ' + rbFmt(budget) + '</text>';
+  }
+  days.forEach(function(it, idx){
+    var x = Math.round(gap + idx * (bw + gap));
+    var bh = Math.max(2, Math.round(it.spent / max * 84));
+    var yy = base - bh;
+    var over = budget && it.spent > budget;
+    svg += '<rect x="' + x + '" y="' + yy + '" width="' + bw + '" height="' + bh + '" rx="5" fill="' + (over ? '#dc2626' : '#2563eb') + '"/>';
+    if (it.spent > 0) svg += '<text x="' + (x + bw/2) + '" y="' + (yy - 4) + '" font-size="8.5" fill="#475569" text-anchor="middle">' + rbFmt(it.spent) + '</text>';
+    svg += '<text x="' + (x + bw/2) + '" y="' + (base + 15) + '" font-size="9.5" fill="#64748b" text-anchor="middle">' + it.d.toLocaleDateString('en-IN', { weekday:'short' }).slice(0,3) + '</text>';
+  });
+  svg += '<line x1="0" y1="' + base + '" x2="' + W + '" y2="' + base + '" stroke="#e3eaf1" stroke-width="1"/></svg>';
+  document.getElementById('weekChart').innerHTML = svg;
+}
+function renderDays(){
+  var now = new Date(), y = now.getFullYear(), mo = now.getMonth();
+  var budget = dailyBudgetFor(now);
+  var el = document.getElementById('dayList');
+  if (!budget){ el.innerHTML = '<p class="empty">Set your monthly income to unlock the day-by-day budget view.</p>'; return; }
+  var html = '';
+  for (var dnum = now.getDate(); dnum >= 1; dnum--){
+    var dd = new Date(y, mo, dnum);
+    var s = spentOn(rbDayKey(dd.getTime()));
+    var diff = budget - s;
+    var verdict = diff >= 0
+      ? '<span class="verdict under">Under ' + rbFmt(diff) + '</span>'
+      : '<span class="verdict over">Over ' + rbFmt(-diff) + '</span>';
+    html += '<div class="day-row"><div><div class="d">' + dd.toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short' }) + '</div>' +
+      '<div class="nums">Budget ' + rbFmt(budget) + ' · Spent ' + rbFmt(s) + '</div></div>' + verdict + '</div>';
+  }
+  el.innerHTML = html;
+}
+function renderList(){
+  var items = state.txns.slice().sort(function(a,b){ return b.ts - a.ts; }).slice(0, 60);
+  document.getElementById('txnCount').textContent = state.txns.length ? '— ' + state.txns.length + ' total' : '';
+  var el = document.getElementById('txnList');
+  if (!items.length){ el.innerHTML = '<p class="empty">Nothing here yet. Add your first transaction above, paste a bank alert in Import, or load the demo data.</p>'; return; }
+  var html = '', lastDay = '';
+  items.forEach(function(t){
+    var dk = rbDayKey(t.ts);
+    if (dk !== lastDay){
+      lastDay = dk;
+      html += '<div class="txn-day">' + new Date(t.ts).toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long' }) + '</div>';
+    }
+    var time = new Date(t.ts).toLocaleTimeString('en-IN', { hour:'numeric', minute:'2-digit' });
+    html += '<div class="txn"><span class="dot" style="background:' + rbCatColor(t.category) + '"></span>' +
+      '<div class="mid"><div class="note">' + esc(t.note) + '</div>' +
+      '<div class="meta">' + esc(t.category) + ' · ' + esc(t.method) + ' · ' + time + '</div></div>' +
+      '<div class="amt ' + t.dir + '">' + (t.dir === 'in' ? '+' : '−') + rbFmt(t.amount) + '</div>' +
+      '<button class="del" data-del="' + t.id + '" title="Delete" aria-label="Delete transaction">✕</button></div>';
+  });
+  el.innerHTML = html;
+  el.querySelectorAll('[data-del]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      state.txns = state.txns.filter(function(t){ return t.id !== btn.getAttribute('data-del'); });
+      save(); renderAll(); toast('Transaction deleted');
+    });
+  });
+}
+function renderAll(){ renderToday(); renderNight(); renderDash(); renderDays(); renderList(); }
+
+/* ---------- Add form ---------- */
+var curDir = 'out', catTouched = false;
+function setDir(d){
+  curDir = d;
+  document.getElementById('segOut').className = d === 'out' ? 'on-out' : '';
+  document.getElementById('segIn').className = d === 'in' ? 'on-in' : '';
+}
+function fillCatSelect(selected){
+  var sel = document.getElementById('fCat');
+  sel.innerHTML = RB_CAT_NAMES.map(function(c){ return '<option' + (c === selected ? ' selected' : '') + '>' + c + '</option>'; }).join('');
+}
+function resetWhen(){
+  var n = new Date(); n.setSeconds(0, 0);
+  var local = new Date(n.getTime() - n.getTimezoneOffset() * 60000);
+  document.getElementById('fWhen').value = local.toISOString().slice(0, 16);
+}
+function wire(){
+  fillCatSelect('Other');
+  document.getElementById('segOut').addEventListener('click', function(){ setDir('out'); });
+  document.getElementById('segIn').addEventListener('click', function(){ setDir('in'); });
+  setDir('out');
+  document.getElementById('fCat').addEventListener('change', function(){ catTouched = true; });
+  document.getElementById('fNote').addEventListener('input', function(){
+    if (!catTouched){
+      var c = rbCategorize(this.value, document.getElementById('fMethod').value, curDir);
+      document.getElementById('fCat').value = c;
+    }
+  });
+  document.getElementById('fMethod').addEventListener('change', function(){
+    if (!catTouched){
+      document.getElementById('fCat').value = rbCategorize(document.getElementById('fNote').value, this.value, curDir);
+    }
+  });
+  document.getElementById('addForm').addEventListener('submit', function(ev){
+    ev.preventDefault();
+    var amt = parseFloat(document.getElementById('fAmount').value);
+    if (!amt || amt <= 0){ toast('Enter a valid amount'); return; }
+    var whenVal = document.getElementById('fWhen').value;
+    var ts = whenVal ? new Date(whenVal).getTime() : Date.now();
+    if (isNaN(ts)) ts = Date.now();
+    var note = rbCleanNote(document.getElementById('fNote').value) || (curDir === 'in' ? 'Money received' : 'Payment');
+    state.txns.push({
+      id: uid(), ts: ts, amount: Math.round(amt * 100) / 100, note: note,
+      category: document.getElementById('fCat').value,
+      method: document.getElementById('fMethod').value, dir: curDir
+    });
+    save(); renderAll();
+    document.getElementById('fAmount').value = '';
+    document.getElementById('fNote').value = '';
+    fillCatSelect('Other'); catTouched = false; resetWhen();
+    toast('Added ' + rbFmt(amt) + ' — ' + note);
+  });
+
+  /* Import: paste alerts */
+  document.getElementById('parseBtn').addEventListener('click', function(){
+    var text = document.getElementById('alertBox').value;
+    var parsed = rbParseAlerts(text);
+    var added = 0;
+    parsed.forEach(function(p){
+      var key = p.amount + '|' + p.note.toLowerCase() + '|' + Math.floor(p.ts / 60000);
+      var dup = state.txns.some(function(t){ return (t.amount + '|' + t.note.toLowerCase() + '|' + Math.floor(t.ts / 60000)) === key; });
+      if (!dup){ p.id = uid(); state.txns.push(p); added++; }
+    });
+    save(); renderAll();
+    document.getElementById('parseMsg').textContent = parsed.length
+      ? 'Added ' + added + ' transaction' + (added === 1 ? '' : 's') + (added < parsed.length ? ' (' + (parsed.length - added) + ' duplicate' + (parsed.length - added === 1 ? '' : 's') + ' skipped)' : '') + '.'
+      : 'No transaction found in that text — check it has an amount like ₹450 or Rs. 450 and words like “debited” or “credited”.';
+    if (added) toast('Added ' + added + ' from alerts');
+  });
+
+  /* Import: CSV */
+  document.getElementById('csvFile').addEventListener('change', function(){
+    var f = this.files && this.files[0];
+    if (!f) return;
+    var rd = new FileReader();
+    rd.onload = function(){
+      var rows = rbParseCSV(String(rd.result || ''));
+      var added = 0;
+      rows.forEach(function(p){
+        var key = p.amount + '|' + p.note.toLowerCase() + '|' + Math.floor(p.ts / 60000);
+        var dup = state.txns.some(function(t){ return (t.amount + '|' + t.note.toLowerCase() + '|' + Math.floor(t.ts / 60000)) === key; });
+        if (!dup){ p.id = uid(); state.txns.push(p); added++; }
+      });
+      save(); renderAll();
+      document.getElementById('csvMsg').textContent = rows.length
+        ? 'Imported ' + added + ' transaction' + (added === 1 ? '' : 's') + ' from the statement.'
+        : 'Could not read that CSV — the header row needs date, narration and debit/credit (or amount) columns.';
+      if (added) toast('Imported ' + added + ' from CSV');
+    };
+    rd.readAsText(f);
+    this.value = '';
+  });
+
+  /* Demo data */
+  document.getElementById('demoBtn').addEventListener('click', function(){
+    if (!state.income){ state.income = 30000; document.getElementById('incomeIn').value = 30000; }
+    var demo = demoTxns();
+    demo.forEach(function(p){ state.txns.push(p); });
+    save(); renderAll();
+    toast('Demo data loaded — ' + demo.length + ' sample transactions');
+  });
+
+  /* Settings */
+  document.getElementById('incomeSave').addEventListener('click', function(){
+    var v = parseFloat(document.getElementById('incomeIn').value);
+    if (!v || v <= 0){ toast('Enter a valid monthly income'); return; }
+    state.income = Math.round(v);
+    save(); renderAll();
+    toast('Daily budget set: ' + rbFmt(dailyBudgetFor(new Date())) + ' / day');
+  });
+  document.getElementById('clearBtn').addEventListener('click', function(){
+    if (!confirm('Clear ALL RozBudget data (income + every transaction) from this browser?')) return;
+    state = { income: 0, txns: [] };
+    document.getElementById('incomeIn').value = '';
+    save(); renderAll(); toast('All data cleared');
+  });
+
+  /* Backup */
+  document.getElementById('exportBtn').addEventListener('click', function(){
+    var blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'rozbudget-backup.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000);
+    document.getElementById('backupMsg').textContent = 'Backup downloaded.';
+  });
+  document.getElementById('importBtn').addEventListener('click', function(){
+    document.getElementById('jsonFile').click();
+  });
+  document.getElementById('jsonFile').addEventListener('change', function(){
+    var f = this.files && this.files[0];
+    if (!f) return;
+    var rd = new FileReader();
+    rd.onload = function(){
+      try {
+        var p = JSON.parse(String(rd.result || ''));
+        if (!p || !Array.isArray(p.txns)) throw new Error('bad shape');
+        state = { income: Number(p.income) || 0, txns: p.txns };
+        document.getElementById('incomeIn').value = state.income || '';
+        save(); renderAll();
+        document.getElementById('backupMsg').textContent = 'Backup restored — ' + state.txns.length + ' transactions.';
+        toast('Backup restored');
+      } catch(e){
+        document.getElementById('backupMsg').textContent = 'That file is not a RozBudget backup.';
+      }
+    };
+    rd.readAsText(f);
+    this.value = '';
+  });
+}
+
+/* ---------- Init ---------- */
+load();
+wire();
+resetWhen();
+if (state.income) document.getElementById('incomeIn').value = state.income;
+renderAll();
+}
+</script>
+</body>
+</html>
